@@ -194,6 +194,7 @@
         <div class="form-container">
             <h1>Create Lead</h1>
             <form id="create-lead-form">
+                {% csrf_token %}
                 <label for="salutation">Salutation:</label>
                 <select id="salutation" name="salutation" required>
                     <option value="Mr.">Mr.</option>
@@ -290,6 +291,7 @@
                     url: '/create-lead/',
                     type: 'POST',
                     data: {
+                        csrfmiddlewaretoken: csrftoken,
                         salutation: $('#salutation').val(),
                         first_name: $('#first_name').val(),
                         last_name: $('#last_name').val(),
@@ -358,6 +360,9 @@
                 $.ajax({
                     url: `/delete-lead/${leadId}/`,
                     type: 'DELETE',
+                    data: {
+                        csrfmiddlewaretoken: csrftoken,
+                    },
                     success: function(response) {
                         $('#delete-popup').hide();
                         $('#overlay').hide();
