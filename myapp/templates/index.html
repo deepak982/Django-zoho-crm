@@ -186,15 +186,62 @@
             }
         }
 
+        .login-button {
+            display: inline-block;
+            padding: 10px 20px;
+            margin-top: 10px;
+            background-color: #007bff;
+            color: #fff;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        .login-button:hover {
+            background-color: #0056b3;
+        }
+
+        .loader-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            text-align: center;
+            z-index: 1001;
+        }
+
+        .loader {
+            border: 8px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 8px solid #3498db;
+            width: 60px;
+            height: 60px;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loader-text {
+            margin-top: 10px;
+            font-size: 16px;
+            color: #333;
+        }
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
     <div class="container">
         <div class="form-container">
+            <a href="/login/" class="login-button">Login</a>
             <h1>Create Lead</h1>
             <form id="create-lead-form">
-                {% csrf_token %}
                 <label for="salutation">Salutation:</label>
                 <select id="salutation" name="salutation" required>
                     <option value="Mr.">Mr.</option>
@@ -258,6 +305,11 @@
     </div>
     <div class="overlay" id="overlay"></div>
 
+    <div class="loader-container" id="loader-container">
+        <div class="loader"></div>
+        <div class="loader-text">Processing...</div>
+    </div>
+
     <script>
         function getCookie(name) {
             let cookieValue = null;
@@ -273,20 +325,35 @@
             }
             return cookieValue;
         }
+
         const csrftoken = getCookie('csrftoken');
+
+        function csrfSafeMethod(method) {
+            // these HTTP methods do not require CSRF protection
+            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+        }
 
         $.ajaxSetup({
             beforeSend: function(xhr, settings) {
-                if (!/^http:.*/.test(settings.url) && !/^https:.*/.test(settings.url)) {
+                if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
                     xhr.setRequestHeader("X-CSRFToken", csrftoken);
                 }
             }
         });
 
+        function showLoader() {
+            $('#loader-container').show();
+        }
+
+        function hideLoader() {
+            $('#loader-container').hide();
+        }
+
         $(document).ready(function() {
             $('#create-lead-form').submit(function(event) {
                 event.preventDefault();
                 $('#form-error').html('');
+                showLoader();
                 $.ajax({
                     url: '/create-lead/',
                     type: 'POST',
@@ -307,11 +374,15 @@
                     },
                     error: function(response) {
                         $('#form-error').text('Failed to create lead: ' + response.responseJSON.error);
+                    },
+                    complete: function() {
+                        hideLoader();
                     }
                 });
             });
 
             function fetchLeads() {
+                showLoader();
                 $.ajax({
                     url: '/leads/',
                     type: 'GET',
@@ -338,6 +409,9 @@
                     },
                     error: function(response) {
                         $('#leads-table tbody').html('<tr><td colspan="8">Error retrieving leads.</td></tr>');
+                    },
+                    complete: function() {
+                        hideLoader();
                     }
                 });
             }
@@ -357,6 +431,7 @@
             }
 
             function deleteLead(leadId) {
+                showLoader();
                 $.ajax({
                     url: `/delete-lead/${leadId}/`,
                     type: 'DELETE',
@@ -371,6 +446,9 @@
                     },
                     error: function(response) {
                         alert('Failed to delete lead: ' + response.responseJSON.error);
+                    },
+                    complete: function() {
+                        hideLoader();
                     }
                 });
             }
@@ -380,542 +458,3 @@
     </script>
 </body>
 </html>
-
-
-
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leads Management</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f8faff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-
-        .container {
-            display: flex;
-            justify-content: space-between;
-            width: 80%;
-            background-color: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-
-        .form-container, .leads-container {
-            padding: 20px;
-            background: #e7f3ff;
-        }
-
-        .form-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            border-right: 1px solid #d0e4f7;
-        }
-
-        .form-container h1 {
-            color: #333;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        input[type="text"], input[type="email"], select {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-
-        button {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s;
-        }
-
-        button:hover {
-            background-color: #0056b3;
-        }
-
-        #form-error {
-            color: red;
-            margin-top: 10px;
-        }
-
-        .leads-container {
-            flex: 2;
-            max-height: 400px;
-            overflow-y: auto;
-            background: #e7f3ff;
-        }
-
-        .leads-container h1 {
-            color: #333;
-            margin-bottom: 10px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th, td {
-            padding: 10px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-
-        th {
-            background-color: #007bff;
-            color: #fff;
-        }
-
-        tr:nth-child(even) {
-            background-color: #f1f9ff;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                flex-direction: column;
-                width: 100%;
-            }
-
-            .form-container, .leads-container {
-                border: none;
-            }
-
-            th, td {
-                display: block;
-                width: 100%;
-            }
-
-            tr {
-                margin-bottom: 10px;
-                display: block;
-            }
-
-            tr:nth-child(even) {
-                background-color: transparent;
-            }
-        }
-    </style>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-</head>
-<body>
-    <div class="container">
-        <div class="form-container">
-            <h1>Create Lead</h1>
-            <form id="create-lead-form">
-                <label for="salutation">Salutation:</label>
-                <select id="salutation" name="salutation" required>
-                    <option value="Mr.">Mr.</option>
-                    <option value="Ms.">Ms.</option>
-                    <option value="Mrs.">Mrs.</option>
-                    <option value="Dr.">Dr.</option>
-                </select>
-                <label for="first_name">First Name:</label>
-                <input type="text" id="first_name" name="first_name" required><br>
-                <label for="last_name">Last Name:</label>
-                <input type="text" id="last_name" name="last_name" required><br>
-                <label for="email">Email:</label>
-                <input type="email" id="email" name="email" required><br>
-                <label for="phone">Phone:</label>
-                <input type="text" id="phone" name="phone" required><br>
-                <label for="company">Company:</label>
-                <input type="text" id="company" name="company" required><br>
-                <label for="lead_source">Lead Source:</label>
-                <select id="lead_source" name="lead_source" required>
-                    <option value="Attampted to Contact">Attampted to Contact</option>
-                    <option value="Contact in Future">Contact in Future</option>
-                    <option value="Contacted">Contacted</option>
-                    <option value="Junk Lead">Junk Lead</option>
-                    <option value="Lost Lead">Lost Lead</option>
-                    <option value="Not Contacted">Not Contacted</option>
-                    <option value="Pre-Qualified">Pre-Qualiffied</option>
-                    <option value="Not Qualified">Not Qualified</option>
-                </select>
-                <button type="submit">Create Lead</button>
-            </form>
-            <div id="form-error"></div>
-            <div id="success-message" style="color: green; display: none; margin-top: 10px;">Lead created successfully!</div>
-        </div>
-        <div class="leads-container">
-            <h1>Leads</h1>
-            <table id="leads-table">
-                <thead>
-                    <tr>
-                        <th>Salutation</th>
-                        <th>First Name</th>
-                        <th>Last Name</th>
-                        <th>Company</th>
-                        <th>Email</th>
-                        <th>Phone</th>
-                        <th>Lead Source</th>
-                    </tr>
-                </thead>
-                <tbody>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <script>
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
-        const csrftoken = getCookie('csrftoken');
-
-        $.ajaxSetup({
-            beforeSend: function(xhr, settings) {
-                if (!/^http:.*/.test(settings.url) && !/^https:.*/.test(settings.url)) {
-                    xhr.setRequestHeader("X-CSRFToken", csrftoken);
-                }
-            }
-        });
-
-        $(document).ready(function() {
-            $('#create-lead-form').submit(function(event) {
-                event.preventDefault();
-                $('#form-error').html('');
-                $.ajax({
-                    url: '/create-lead/',
-                    type: 'POST',
-                    data: {
-                        salutation: $('#salutation').val(),
-                        first_name: $('#first_name').val(),
-                        last_name: $('#last_name').val(),
-                        email: $('#email').val(),
-                        phone: $('#phone').val(),
-                        company: $('#company').val(),
-                        lead_source: $('#lead_source').val(),
-                    },
-                    success: function(response) {
-                        $('#create-lead-form')[0].reset();
-                        $('#success-message').show().delay(3000).fadeOut();
-                        fetchLeads();
-                    },
-                    error: function(response) {
-                        $('#form-error').text('Failed to create lead: ' + response.responseJSON.error);
-                    }
-                });
-            });
-
-            function fetchLeads() {
-                $.ajax({
-                    url: '/leads/',
-                    type: 'GET',
-                    success: function(data) {
-                        $('#leads-table tbody').empty();
-                        data.leads.forEach(function(lead) {
-                            $('#leads-table tbody').append(`
-                                <tr>
-                                    <td>${lead.Salutation}</td>
-                                    <td>${lead.First_Name}</td>
-                                    <td>${lead.Last_Name}</td>
-                                    <td>${lead.Company}</td>
-                                    <td>${lead.Email}</td>
-                                    <td>${lead.Phone}</td>
-                                    <td>${lead.Lead_Source}</td>
-                                </tr>
-                            `);
-                        });
-                    },
-                    error: function(response) {
-                        $('#leads-table tbody').html('<tr><td colspan="7">Error retrieving leads.</td></tr>');
-                    }
-                });
-            }
-
-            fetchLeads();
-        });
-    </script>
-</body>
-</html> -->
-
-
-
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leads Management</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f8faff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-
-        .container {
-            display: flex;
-            justify-content: space-between;
-            width: 80%;
-            background-color: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-
-        .form-container, .leads-container {
-            padding: 20px;
-            background: #e7f3ff;
-        }
-
-        .form-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            border-right: 1px solid #d0e4f7;
-        }
-
-        .form-container h1 {
-            color: #333;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        input[type="text"], input[type="email"] {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-
-        button {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s;
-        }
-
-        button:hover {
-            background-color: #0056b3;
-        }
-
-        #form-error {
-            color: red;
-            margin-top: 10px;
-        }
-
-        .leads-container {
-            flex: 2;
-            max-height: 400px;
-            overflow-y: auto;
-            background: #e7f3ff;
-        }
-
-        .leads-container h1 {
-            color: #333;
-            margin-bottom: 10px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th, td {
-            padding: 10px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-
-        th {
-            background-color: #007bff;
-            color: #fff;
-        }
-
-        tr:nth-child(even) {
-            background-color: #f1f9ff;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                flex-direction: column;
-                width: 100%;
-            }
-
-            .form-container, .leads-container {
-                border: none;
-            }
-
-            th, td {
-                display: block;
-                width: 100%;
-            }
-
-            tr {
-                margin-bottom: 10px;
-                display: block;
-            }
-
-            tr:nth-child(even) {
-                background-color: transparent;
-            }
-        }
-    </style>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-</head>
-<body>
-    <div class="container">
-        <div class="form-container">
-            <h1>Create Lead</h1>
-            <form id="create-lead-form">
-                <label for="name">Name:</label>
-                <input type="text" id="name" name="name" required><br>
-                <label for="email">Email:</label>
-                <input type="email" id="email" name="email" required><br>
-                <label for="phone">Phone:</label>
-                <input type="text" id="phone" name="phone" required><br>
-                <label for="company">Company:</label>
-                <input type="text" id="company" name="company" required><br>
-                <button type="submit">Create Lead</button>
-            </form>
-            <div id="form-error"></div>
-        </div>
-        <div class="leads-container">
-            <h1>Leads</h1>
-            <table id="leads-table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Company</th>
-                        <th>Email</th>
-                        <th>Phone</th>
-                        <th>Lead Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <script>
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
-        const csrftoken = getCookie('csrftoken');
-
-        $.ajaxSetup({
-            beforeSend: function(xhr, settings) {
-                if (!/^http:.*/.test(settings.url) && !/^https:.*/.test(settings.url)) {
-                    xhr.setRequestHeader("X-CSRFToken", csrftoken);
-                }
-            }
-        });
-
-        $(document).ready(function() {
-            $('#create-lead-form').submit(function(event) {
-                event.preventDefault();
-                $('#form-error').html('');
-                $.ajax({
-                    url: '/create-lead/',
-                    type: 'POST',
-                    data: {
-                        name: $('#name').val(),
-                        email: $('#email').val(),
-                        phone: $('#phone').val(),
-                        company: $('#company').val(),
-                    },
-                    success: function(response) {
-                        alert('Lead created successfully!');
-                        fetchLeads();
-                    },
-                    error: function(response) {
-                        $('#form-error').text('Failed to create lead: ' + response.responseJSON.error);
-                    }
-                });
-            });
-
-            function fetchLeads() {
-                $.ajax({
-                    url: '/leads/',
-                    type: 'GET',
-                    success: function(data) {
-                        $('#leads-table tbody').empty();
-                        data.leads.forEach(function(lead) {
-                            $('#leads-table tbody').append(`
-                                <tr>
-                                    <td>${lead.Salutation} ${lead.First_Name} ${lead.Last_Name}</td>
-                                    <td>${lead.Company}</td>
-                                    <td>${lead.Email}</td>
-                                    <td>${lead.Phone}</td>
-                                    <td>${lead.Lead_Status}</td>
-                                </tr>
-                            `);
-                        });
-                    },
-                    error: function(response) {
-                        $('#leads-table tbody').html('<tr><td colspan="5">Error retrieving leads.</td></tr>');
-                    }
-                });
-            }
-
-            fetchLeads();
-        });
-    </script>
-</body>
-</html> -->
