@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-2egc1x8-fsat44^g_rn4%o+k20tyc)sf^y#%eotp%bd!%hfs_8
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -134,7 +134,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Auth
+from decouple import config
 
-CLIENT_ID = '1000.90TB6EPH88D86B98801LPAJS9J58AX'
-CLIENT_SECRET = '28cf4aa150138a5c6eef57386833d4592d7c3f5004'
-REDIRECT_URI = 'http://localhost:8000/callback'
+CLIENT_ID = config('CLIENT_ID')
+CLIENT_SECRET = config('CLIENT_SECRET')

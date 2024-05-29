@@ -1,10 +1,10 @@
-import requests
+import requests, logging
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
-import logging
+from django.conf import settings
 
-CLIENT_ID = '1000.V0UAJCQ5X9ILI3V99YUNXXMSXJLZCT'
-CLIENT_SECRET = '67671686362c2f19051727536817d760ac62067e0e'
+CLIENT_ID = settings.CLIENT_ID
+CLIENT_SECRET = settings.CLIENT_SECRET
 REDIRECT_URI = 'http://localhost:8000/callback'
 TOKEN_URL = 'https://accounts.zoho.in/oauth/v2/token'
 
